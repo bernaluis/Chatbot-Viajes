@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TravelBot</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(to bottom right, #007bff, #56ccf2);
+            color: white;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .container {
+            max-width: 800px;
+            background-color: white;
+            color: #333;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .chip {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            margin: 0.25rem;
+            background-color: #f1f1f1;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .chip:hover {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .chip.selected {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-custom {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .btn-custom:hover {
+            background-color: #218838;
+            color: white;
+        }
+
+        #recommendations {
+            margin-top: 20px;
+        }
+
+        .header-logo {
+            font-size: 2.5rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-logo i {
+            margin-right: 10px;
+            color: #ffc107;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="d-flex flex-column align-items-center justify-content-center vh-100">
+        <div class="container">
+            <div class="text-center mb-4 header-logo">
+                <i class="fas fa-plane-departure"></i>
+                TravelBot
+            </div>
+
+            <form id="travel-form">
+                <!-- Origen y Destino -->
+                <div class="row">
+                    <div class="col s12 m6">
+                        <div class="mb-3">
+                            <label for="origin" class="form-label fw-bold">¿De donde vas a salir?</label>
+                            <select class="form-select" id="origin" required>
+                                <option value="" disabled selected>Selecciona un origen</option>
+                                <option value="España">España</option>
+                                <option value="Francia">Francia</option>
+                                <option value="Italia">Italia</option>
+                                <option value="Estados Unidos">Estados Unidos</option>
+                                <option value="Japón">Japón</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col s12 m6">
+                        <div class="mb-3">
+                            <label for="destination" class="form-label fw-bold">¿A dónde quieres ir?</label>
+                            <select class="form-select" id="destination" required>
+                                <option value="" disabled selected>Selecciona un destino</option>
+                                <option value="España">España</option>
+                                <option value="Francia">Francia</option>
+                                <option value="Italia">Italia</option>
+                                <option value="Estados Unidos">Estados Unidos</option>
+                                <option value="Japón">Japón</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fechas -->
+                <div class="row">
+                    <div class="col s12 m6">
+                        <div class="mb-3">
+                            <label for="checkin_date" class="form-label fw-bold">¿Cuándo quieres salir?</label>
+                            <input type="date" class="form-control" id="checkin_date" required>
+                        </div>
+                    </div>
+                    <div class="col s12 m6">
+                        <div class="mb-3">
+                            <label for="checkout_date" class="form-label fw-bold">¿Cuándo quieres regresar?</label>
+                            <input type="date" class="form-control" id="checkout_date" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actividades -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">¿Qué actividades quieres realizar?</label>
+                    <div id="activities">
+                        <span class="chip" data-activity="Playa"><i class="fas fa-umbrella-beach"></i> Playa</span>
+                        <span class="chip" data-activity="Cultura"><i class="fas fa-landmark"></i> Cultura</span>
+                        <span class="chip" data-activity="Aventura"><i class="fas fa-hiking"></i> Aventura</span>
+                        <span class="chip" data-activity="Gastronomía"><i class="fas fa-utensils"></i>
+                            Gastronomía</span>
+                        <span class="chip" data-activity="Relax"><i class="fas fa-spa"></i> Relax</span>
+                    </div>
+                </div>
+
+                <!-- Presupuesto -->
+                <div class="mb-3">
+                    <label for="budget" class="form-label fw-bold">Presupuesto por destino (USD)</label>
+                    <input type="number" class="form-control" id="budget"
+                        placeholder="Ingresa el presupuesto por destino" required>
+                </div>
+
+                <!-- Botón Calcular -->
+                <div class="text-center">
+                    <button type="button" id="calculate" class="btn btn-primary w-100">Calcular</button>
+                </div>
+            </form>
+
+            <!-- Recomendaciones -->
+            <div id="recommendations" class="mt-4"></div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- FontAwesome JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/js/all.min.js"></script>
+
+    <script>
+        const selectedActivities = new Set();
+
+        // Asegurarse de que el DOM esté cargado antes de agregar los eventos
+        document.addEventListener('DOMContentLoaded', function() {
+            // Selección de actividades
+            document.getElementById('activities').addEventListener('click', (e) => {
+                if (e.target.classList.contains('chip')) {
+                    const activity = e.target.getAttribute('data-activity');
+                    // Alternar selección
+                    if (selectedActivities.has(activity)) {
+                        selectedActivities.delete(activity);    // Quitar del Set
+                        e.target.classList.remove('selected'); // Remover la clase de seleccionado
+                    } else {
+                        selectedActivities.add(activity); // Agregar al Set
+                        e.target.classList.add('selected'); // Agregar la clase de seleccionado
+                    }
+                    console.log('Actividades seleccionadas:', Array.from(selectedActivities)); // Mostrar actividades seleccionadas
+                }
+            });
+
+            // Calcular
+            document.getElementById('calculate').addEventListener('click', async function() {
+                const origin = document.getElementById('origin').value;
+                const destination = document.getElementById('destination').value;
+                const departureDate = document.getElementById('checkin_date').value;
+                const returnDate = document.getElementById('checkout_date').value;
+                const budget = document.getElementById('budget').value;
+
+                // Verificación de campos obligatorios
+                if (!origin || !destination || !departureDate || !returnDate || !budget) {
+                    alert('Por favor, completa todos los campos.');
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/recommend', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            origin,
+                            destination,
+                            departure_date: departureDate,
+                            return_date: returnDate,
+                            budget,
+                            activities: Array.from(selectedActivities)
+                        }),
+                    });
+
+                    const data = await response.json();
+                    console.log('Recomendaciones:', data);
+                    displayRecommendations(data);
+                } catch (error) {
+                    console.error('Error al obtener las recomendaciones:', error);
+                    alert('Ocurrió un error al obtener las recomendaciones.');
+                }
+            });
+        });
+
+        function displayRecommendations(data) {
+            const recommendationsDiv = document.getElementById('recommendations');
+            recommendationsDiv.innerHTML = '';
+            if (data.recommendations && data.recommendations.length > 0) {
+                const ul = document.createElement('ul');
+                data.recommendations.forEach(rec => {
+                    const li = document.createElement('li');
+                    li.textContent = `${rec.name} - $${rec.price}`;
+                    ul.appendChild(li);
+                });
+                recommendationsDiv.appendChild(ul);
+            } else {
+                recommendationsDiv.innerHTML = '<p>No se encontraron recomendaciones.</p>';
+            }
+        }
+    </script>
+</body>
+
+</html>
