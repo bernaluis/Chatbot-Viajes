@@ -176,17 +176,17 @@
                     const activity = e.target.getAttribute('data-activity');
                     // Alternar selección
                     if (selectedActivities.has(activity)) {
-                        selectedActivities.delete(activity);    // Quitar del Set
+                        selectedActivities.delete(activity); // Quitar del Set
                         e.target.classList.remove('selected'); // Remover la clase de seleccionado
                     } else {
                         selectedActivities.add(activity); // Agregar al Set
                         e.target.classList.add('selected'); // Agregar la clase de seleccionado
                     }
-                    console.log('Actividades seleccionadas:', Array.from(selectedActivities)); // Mostrar actividades seleccionadas
+                    console.log('Actividades seleccionadas:', Array.from(
+                    selectedActivities)); // Mostrar actividades seleccionadas
                 }
             });
 
-            // Calcular
             document.getElementById('calculate').addEventListener('click', async function() {
                 const origin = document.getElementById('origin').value;
                 const destination = document.getElementById('destination').value;
@@ -200,6 +200,16 @@
                     return;
                 }
 
+                // Validación de fechas
+                if (new Date(departureDate) > new Date(returnDate)) {
+                    alert('La fecha de regreso no puede ser anterior a la fecha de salida.');
+                    return;
+                }
+
+                const recommendationsDiv = document.getElementById('recommendations');
+                recommendationsDiv.innerHTML =
+                '<p>Cargando recomendaciones...</p>'; // Indicador de carga
+
                 try {
                     const response = await fetch('/recommend', {
                         method: 'POST',
@@ -212,36 +222,72 @@
                             departure_date: departureDate,
                             return_date: returnDate,
                             budget,
-                            activities: Array.from(selectedActivities)
+                            activities: Array.from(selectedActivities),
                         }),
                     });
 
                     const data = await response.json();
-                    console.log('Recomendaciones:', data);
-                    displayRecommendations(data);
+
+                    if (data.status === 'success') {
+                        displayRecommendations(data.response);
+                    } else {
+                        recommendationsDiv.innerHTML =
+                            `<p class="text-danger">Error: ${data.message}</p>`;
+                    }
                 } catch (error) {
                     console.error('Error al obtener las recomendaciones:', error);
-                    alert('Ocurrió un error al obtener las recomendaciones.');
+                    recommendationsDiv.innerHTML =
+                        '<p class="text-danger">Ocurrió un error al obtener las recomendaciones.</p>';
                 }
             });
-        });
 
-        function displayRecommendations(data) {
-            const recommendationsDiv = document.getElementById('recommendations');
-            recommendationsDiv.innerHTML = '';
-            if (data.recommendations && data.recommendations.length > 0) {
-                const ul = document.createElement('ul');
-                data.recommendations.forEach(rec => {
-                    const li = document.createElement('li');
-                    li.textContent = `${rec.name} - $${rec.price}`;
-                    ul.appendChild(li);
-                });
-                recommendationsDiv.appendChild(ul);
-            } else {
-                recommendationsDiv.innerHTML = '<p>No se encontraron recomendaciones.</p>';
-            }
+            function displayRecommendations(response) {
+    const recommendationsDiv = document.getElementById('recommendations');
+    recommendationsDiv.innerHTML = ''; // Limpiar contenido previo
+
+    // Estructura base del diseño
+    let contentHTML = `
+        <div class="card shadow-lg border-0">
+            <div class="card-body">
+                <h4 class="card-title text-center text-primary">Opciones de Viaje Recomendadas</h4>
+                <hr class="my-3">
+    `;
+
+    // Dividir la respuesta en secciones por líneas
+    const lines = response.split("\n");
+    lines.forEach((line) => {
+        // Si la línea contiene un guion, la formateamos como una lista con viñeta
+        if (line.trim().startsWith("-")) {
+            contentHTML += `
+                <li class="list-group-item">${line.replace("-", "").trim()}</li>
+            `;
+        } 
+        // Si es un encabezado (números como 1., 2., etc.), lo convertimos en subtítulo
+        else if (line.match(/^\d+\./)) {
+            contentHTML += `
+                <h5 class="text-info mt-3">${line.trim()}</h5>
+            `;
+        } 
+        // Si es texto normal, lo mostramos como párrafo
+        else if (line.trim() !== "") {
+            contentHTML += `
+                <p>${line.trim()}</p>
+            `;
         }
+    });
+
+    contentHTML += `
+            </div>
+        </div>
+    `;
+
+    // Agregar contenido al contenedor de recomendaciones
+    recommendationsDiv.innerHTML = contentHTML;
+}
+
+        });
     </script>
+
 </body>
 
 </html>

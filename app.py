@@ -37,7 +37,7 @@ def recommend():
 
     # Extraer datos
     origin = data.get('origin')
-    destinations = data.get('destinations')
+    destinations = data.get('destination')
     departure_date = data.get('departure_date')
     return_date = data.get('return_date')
     activities = data.get('activities', [])
@@ -60,13 +60,13 @@ def recommend():
         chatgpt_response = response.choices[0].message.content
 
         # Guardar en SQLite
-        with sqlite3.connect(DB_NAME) as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                INSERT INTO history (origin, destination, departure_date, return_date, activities, budget, response)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (origin, ', '.join(destinations), departure_date, return_date, ', '.join(activities), budget, chatgpt_response))
-            conn.commit()
+        # with sqlite3.connect(DB_NAME) as conn:
+        #     cursor = conn.cursor()
+        #     cursor.execute("""
+        #         INSERT INTO history (origin, destination, departure_date, return_date, activities, budget, response)
+        #         VALUES (?, ?, ?, ?, ?, ?, ?)
+        #     """, (origin, ', ', destinations, departure_date, return_date, ', '.join(activities), budget, chatgpt_response))
+        #     conn.commit()
 
         # Respuesta al cliente
         return jsonify({
